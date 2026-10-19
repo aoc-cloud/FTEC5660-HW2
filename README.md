@@ -32,14 +32,14 @@ uses unseen CVs.
 The server is hosted at `https://ftec5660.ngrok.app/mcp`. `hw2.py` already
 connects to it and passes you these tools:
 
-| Tool | Purpose |
-| --- | --- |
-| `search_facebook_users(q, limit, fuzzy)` | find Facebook users by display name |
-| `get_facebook_profile(user_id)` | full Facebook profile |
-| `get_facebook_mutual_friends(user_id_1, user_id_2)` | mutual friends of two users |
-| `search_linkedin_people(q, location, industry, limit, fuzzy)` | search LinkedIn by name, skill, or title |
-| `get_linkedin_profile(person_id)` | full LinkedIn profile (experience, education, skills) |
-| `get_linkedin_interactions(person_id)` | post and like statistics |
+| Tool                                                          | Purpose                                               |
+| ------------------------------------------------------------- | ----------------------------------------------------- |
+| `search_facebook_users(q, limit, fuzzy)`                      | find Facebook users by display name                   |
+| `get_facebook_profile(user_id)`                               | full Facebook profile                                 |
+| `get_facebook_mutual_friends(user_id_1, user_id_2)`           | mutual friends of two users                           |
+| `search_linkedin_people(q, location, industry, limit, fuzzy)` | search LinkedIn by name, skill, or title              |
+| `get_linkedin_profile(person_id)`                             | full LinkedIn profile (experience, education, skills) |
+| `get_linkedin_interactions(person_id)`                        | post and like statistics                              |
 
 Print `tool.name`, `tool.description`, and `tool.args` for the full schemas.
 
@@ -68,7 +68,6 @@ most about 3 CVs in flight at a time (e.g. `asyncio.Semaphore(3)`). We grade
 with our own API key, so never put a key in your code; `.env` must stay out of
 git.
 
-
 ## Task 2: Fool the Verifier
 
 We added a target candidate, **Kelly Tsang** (LinkedIn `person_id` 10001,
@@ -95,9 +94,8 @@ attack the MCP server. See the homework description for the full rules.
 
 I built a deterministic verification pipeline around `deepseek-v4-flash` and
 the six SocialGraph MCP tools. For each CV, the model first extracts a
-structured record (name, city, jobs, education, skills). The agent then
-resolves the candidate's identity: it infers the industry from the CV headline
-(e.g. "Logistics Professional" → Logistics) and calls
+structured record. The agent then resolves the candidate's identity: it
+infers the industry from the CV headline and calls
 `search_linkedin_people` with name, city and industry. This step is essential
 because the mock graph contains up to 20 people with the same name in the same
 city. The remaining candidates' full profiles are fetched and ranked by
@@ -109,14 +107,14 @@ search fails.
 The comparison is rule-based, which keeps the model from being lenient about
 numbers: exact employer/school/city checks, start/end year checks, degree-level
 mapping ("Bachelor of Science" → BSc, "Master of Business Administration" →
-MBA), seniority-aware title checks, and skill-subset checks with aliases
-("UI/UX Design" ↔ UI/UX). Job descriptions, the headline and hometown are not
-treated as claims to verify, as required. A `deepseek-v4-flash` adjudication
-call is used only for genuinely ambiguous wording differences; hard mismatches
-(years, employers, schools, seniority, graduation year) are confirmed by code.
-Any real discrepancy returns 0.1, a clean CV returns 0.9, and an ambiguous
-identity returns 0.5. Each CV runs under `asyncio.Semaphore(3)`, with per-CV
-timeouts and exception handling so one failure cannot crash the run.
+MBA), seniority-aware title checks, and skill-subset checks with aliases.
+
+Job descriptions, the headline and hometown are not treated as claims to verify,
+as required. A `deepseek-v4-flash` adjudication call is used only for genuinely
+ambiguous wording differences; hard mismatches are confirmed by code. Any real
+discrepancy returns 0.1, a clean CV returns 0.9, and an ambiguous identity
+returns 0.5. Each CV runs under `asyncio.Semaphore(3)`, with per-CV timeouts and
+exception handling so one failure cannot crash the run.
 
 On `public_test` the agent scores **7/7** on three consecutive runs, at about
 20 seconds per run.
@@ -131,12 +129,11 @@ says Manager with seniority `mid`, so the visible title is a genuine
 embellishment.
 
 The attack exploits the gap between the two channels a PDF has. `markitdown`
-(the loader used by every verifier) extracts only the text layer; it never sees
-the image. A human opening the PDF sees the rendered title. I verified the
-differential directly: `markitdown` on `task2/adversarial_cv.pdf` extracts
-`Manager, AIA    2022 – Present`, while the rendered page shows
-`Senior Manager, AIA    2022 – Present`. My own Task 1 agent scores both the
-adversarial CV and the true CV at **0.9**.
+extracts only the text layer; it never sees the image. A human opening the PDF
+sees the rendered title. I verified the differential directly: `markitdown` on
+`task2/adversarial_cv.pdf` extracts `Manager, AIA    2022 – Present`, while the
+rendered page shows `Senior Manager, AIA    2022 – Present`. My own Task 1
+agent scores both the adversarial CV and the true CV at **0.9**.
 
 I expect this to work against the five verifiers because all of them use the
 same PDF loader, so they all receive a CV whose extracted text is completely
