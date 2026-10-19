@@ -93,7 +93,7 @@ attack the MCP server. See the homework description for the full rules.
 ### Task 1 — CV verification agent
 
 I built a deterministic verification pipeline around `deepseek-v4-flash` and
-the six SocialGraph MCP tools. For each CV, the model first extracts a
+four of the six SocialGraph MCP tools. For each CV, the model first extracts a
 structured record. The agent then resolves the candidate's identity: it
 infers the industry from the CV headline and calls
 `search_linkedin_people` with name, city and industry. This step is essential
